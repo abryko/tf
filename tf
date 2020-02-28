@@ -97,7 +97,7 @@ function _tf_apply () {
 
 function _tf_parsing () {
   # trying to source our environments variables
-  source "tffile" &>/dev/null
+  source "tffile" &>/dev/null || true
   # some default variables
   GIT_REVISION="${GIT_REVISION:-refs/heads/master}"
   LIB_URL="${LIB_URL:-git@git.corp.cloudwatt.com:pocwatt/terraform/lib.git}"
