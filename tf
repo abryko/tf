@@ -71,6 +71,7 @@ function _tf_init () {
   fi
   (
     cd "${TMP_DIR}";
+    git fetch origin
     git reset --hard "${GIT_REVISION}"
   )
   # environment replacement in backend
@@ -78,23 +79,38 @@ function _tf_init () {
   # add any tf and tfvars files present here to override the downloaded configuration
   cp ./*.tf ./*.tfvars "${TMP_DIR}/configurations/${CONFIGURATION}" &>/dev/null || true
   # terraform init
-  terraform init -upgrade=true "${TMP_DIR}/configurations/${CONFIGURATION}"
+  (
+    cd "${TMP_DIR}/configurations/${CONFIGURATION}"
+    terraform init -upgrade=true
+  )
   }
 
 function _tf_clean () {
-  rm -rf "${TMP_DIR}" .terraform &>/dev/null || true
+  rm -rf "${TMP_DIR}" &>/dev/null || true
   }
 
 function _tf_plan () {
   _tf_init
-  terraform plan ${TARGET_RESOURCE} -out="${TMP_DIR}/tf.out" "${TMP_DIR}/configurations/${CONFIGURATION}"
+  (
+    cd "${TMP_DIR}/configurations/${CONFIGURATION}"
+    terraform plan ${TARGET_RESOURCE} -out="../../tf.out"
+  )
   }
 
 function _tf_apply () {
-  if ! [ -f "${TMP_DIR}/tf.out" ]; then _tf_plan ; fi
-  terraform apply ${TARGET_RESOURCE} ${AUTO_APPROVE} "${TMP_DIR}/tf.out"
+  if ! [ -f "../tf.out" ]; then _tf_plan ; fi
+  (
+    cd "${TMP_DIR}/configurations/${CONFIGURATION}"
+    terraform apply ${TARGET_RESOURCE} ${AUTO_APPROVE} "../../tf.out"
+  )
   }
 
+function _tf_show () {
+  (
+    cd "${TMP_DIR}/configurations/${CONFIGURATION}"
+    terraform show
+  )
+  }
 function _tf_parsing () {
   # trying to source our environments variables
   source "tffile" &>/dev/null || true
@@ -105,8 +121,15 @@ function _tf_parsing () {
   ENV=$(basename "$(git remote get-url origin)")
   ENVIRONMENT="${ENVIRONMENT:-${ENV%.*}}"
   TMP_DIR="./.tmp"
-  
-  if [ "${ACTION}" != "apply" ] && [ "${ACTION}" != "plan" ] && [ "${ACTION}" != "init" ] && [ "${ACTION}" != "clean" ]; then _tf_help; exit 1; fi
+
+  case ${ACTION} in
+    apply | plan | init | clean | show )
+    ;;
+    * )
+    _tf_help;
+    exit 1;;
+  esac
+
   shift;
   # parameters parsing
   while [[ $# -gt 1 ]]
@@ -152,6 +175,7 @@ function _tf_parsing () {
   echo "ENVIRONMENT: ${ENVIRONMENT}"
   echo "TMP_DIR: ${TMP_DIR}"
   echo "TARGET: ${TARGET}"
+  terraform -v
 }
 
 _tf_parsing "$@"
