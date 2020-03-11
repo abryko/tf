@@ -74,8 +74,9 @@ function _tf_init () {
     git fetch origin
     git reset --hard "${GIT_REVISION}"
   )
-  # environment replacement in backend
-  sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "${TMP_DIR}/configurations/${CONFIGURATION}/backend.tf"
+  # environment replacement in every *tf* files
+  sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "${TMP_DIR}"/configurations/"${CONFIGURATION}"/*.tf* 
+  
   # add any tf and tfvars files present here to override the downloaded configuration
   cp ./*.tf ./*.tfvars "${TMP_DIR}/configurations/${CONFIGURATION}" &>/dev/null || true
   # terraform init
