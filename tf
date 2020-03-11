@@ -10,8 +10,10 @@ NAME
 
 SYNPOSIS
       tf init [-c TERRAFORM_CONFIGURATION] [-r GIT_REVISION] [-l LIB_URL] [-e ENVIRONMENT]
-      tf plan [-c TERRAFORM_CONFIGURATION] [-t RESOURCE]
-      tf apply [-c TERRAFORM_CONFIGURATION] [-a] [-t RESOURCE]
+      tf plan [-c TERRAFORM_CONFIGURATION] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
+      tf apply [-c TERRAFORM_CONFIGURATION] [-a] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
+      tf show [-c TERRAFORM_CONFIGURATION] [-- TERRAFORM_OPTIONS ]
+      tf destroy [-c TERRAFORM_CONFIGURATION] [-- TERRAFORM_OPTIONS ]
       tf clean
 
 DESCRIPTION
@@ -25,6 +27,12 @@ DESCRIPTION
 
       apply
            creates resources planified with plan command         
+
+      show 
+           issue the terraform show command for the specified configuration
+
+      destroy 
+           issue the terraform destroy command for the specified configuration
 
       clean
            clean .terraform and .tmp folder
@@ -74,11 +82,11 @@ function _tf_init () {
     git fetch origin
     git reset --hard "${GIT_REVISION}"
   )
-  # environment replacement in every *tf* files
-  sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "${TMP_DIR}"/configurations/"${CONFIGURATION}"/*.tf* 
-  
   # add any tf and tfvars files present here to override the downloaded configuration
   cp ./*.tf ./*.tfvars "${TMP_DIR}/configurations/${CONFIGURATION}" &>/dev/null || true
+  
+  # environment replacement in every *tf* files
+  sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "${TMP_DIR}"/configurations/"${CONFIGURATION}"/*.tf* 
   # terraform init
   (
     cd "${TMP_DIR}/configurations/${CONFIGURATION}"
@@ -94,7 +102,8 @@ function _tf_plan () {
   _tf_init
   (
     cd "${TMP_DIR}/configurations/${CONFIGURATION}"
-    terraform plan ${TARGET_RESOURCE} -out="../../tf.out"
+    # shellcheck disable=2086
+    terraform plan ${TERRAFORM_OPTIONS} -out="../../tf.out"
   )
   }
 
@@ -102,18 +111,28 @@ function _tf_apply () {
   if ! [ -f "../tf.out" ]; then _tf_plan ; fi
   (
     cd "${TMP_DIR}/configurations/${CONFIGURATION}"
-    terraform apply ${TARGET_RESOURCE} ${AUTO_APPROVE} "../../tf.out"
+    # shellcheck disable=2086
+    terraform apply ${TERRAFORM_OPTIONS} "../../tf.out"
   )
   }
 
 function _tf_show () {
   (
     cd "${TMP_DIR}/configurations/${CONFIGURATION}"
-    terraform show
+    # shellcheck disable=2086
+    terraform show ${TERRAFORM_OPTIONS}
+  )
+  }
+function _tf_destroy () {
+  (
+    cd "${TMP_DIR}/configurations/${CONFIGURATION}"
+    # shellcheck disable=2086
+    terraform destroy ${TERRAFORM_OPTIONS}
   )
   }
 function _tf_parsing () {
   # trying to source our environments variables
+  # shellcheck disable=1091
   source "tffile" &>/dev/null || true
   # some default variables
   GIT_REVISION="${GIT_REVISION:-refs/heads/master}"
@@ -124,7 +143,7 @@ function _tf_parsing () {
   TMP_DIR="./.tmp"
 
   case ${ACTION} in
-    apply | plan | init | clean | show )
+    apply | plan | init | clean | show | destroy)
     ;;
     * )
     _tf_help;
@@ -149,21 +168,19 @@ function _tf_parsing () {
         -e | --environment )
           shift;
           ENVIRONMENT=$1;;
-        -t | --target )
+        -- )
           shift;
-          TARGET=$1;;
-        -a | --auto-approve )
-          AUTO_APPROVE="-auto-approve";;
+          TERRAFORM_OPTIONS="$*";
+          break;;
         *)
           _tf_help;exit 1;;
       esac
       shift;
   done
-  TARGET_RESOURCE=""
-  if  [ -n "${TARGET}" ]; then TARGET_RESOURCE="-target=${TARGET}"; fi
 
   # mandatory parameters check
-  if { [ "${ACTION}" == "init" ] || [ "${ACTION}" == "plan" ] || [ "${ACTION}" == "apply" ]; }; then
+  case ${ACTION} in
+    init | plan | apply | destroy )
     if [ -z "${CONFIGURATION}" ]; then
       echo "Missing configuration option"
       _tf_help; exit 1;
@@ -172,7 +189,8 @@ function _tf_parsing () {
       echo "Missing environment option"
       _tf_help; exit 1;
     fi
-  fi
+    ;;
+  esac
   
   # let's display every parameter
   echo "ACTION: ${ACTION}"
@@ -181,7 +199,7 @@ function _tf_parsing () {
   echo "LIB_URL: ${LIB_URL}"
   echo "ENVIRONMENT: ${ENVIRONMENT}"
   echo "TMP_DIR: ${TMP_DIR}"
-  echo "TARGET: ${TARGET}"
+  echo "TERRAFORM_OPTIONS: ${TERRAFORM_OPTIONS}"
   terraform -v
 }
 
