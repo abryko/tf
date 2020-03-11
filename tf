@@ -71,14 +71,14 @@ EXAMPLE
   }
 
 function _tf_init () {
-  if ! [ -d "${TMP_DIR}/configurations/${CONFIGURATION}" ]; then 
+  if ! [[ -d "${TMP_DIR}/configurations/${CONFIGURATION}" ]]; then
     _tf_clean
     mkdir "${TMP_DIR}" || true
     # now we clone lib.git repository
     git clone "${LIB_URL}" "${TMP_DIR}"
   fi
   (
-    cd "${TMP_DIR}";
+    cd "${TMP_DIR}"
     git fetch origin
     git reset --hard "${GIT_REVISION}"
   )
@@ -108,7 +108,7 @@ function _tf_plan () {
   }
 
 function _tf_apply () {
-  if ! [ -f "../tf.out" ]; then _tf_plan ; fi
+  if ! [[ -f "../tf.out" ]]; then _tf_plan; fi
   (
     cd "${TMP_DIR}/configurations/${CONFIGURATION}"
     # shellcheck disable=2086
@@ -181,11 +181,11 @@ function _tf_parsing () {
   # mandatory parameters check
   case ${ACTION} in
     init | plan | apply | destroy )
-    if [ -z "${CONFIGURATION}" ]; then
+    if [[ -z "${CONFIGURATION}" ]]; then
       echo "Missing configuration option"
       _tf_help; exit 1;
     fi
-    if [ -z "${ENVIRONMENT}" ]; then
+    if [[ -z "${ENVIRONMENT}" ]]; then
       echo "Missing environment option"
       _tf_help; exit 1;
     fi
