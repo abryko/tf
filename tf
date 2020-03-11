@@ -119,7 +119,7 @@ function _tf_parsing () {
   GIT_REVISION="${GIT_REVISION:-refs/heads/master}"
   LIB_URL="${LIB_URL:-git@git.corp.cloudwatt.com:pocwatt/terraform/lib.git}"
   ACTION=$1;
-  ENV=$(basename "$(git remote get-url origin)")
+  ENV=$(basename "$(git remote get-url origin 2>/dev/null)")
   ENVIRONMENT="${ENVIRONMENT:-${ENV%.*}}"
   TMP_DIR="./.tmp"
 
@@ -163,9 +163,15 @@ function _tf_parsing () {
   if  [ -n "${TARGET}" ]; then TARGET_RESOURCE="-target=${TARGET}"; fi
 
   # mandatory parameters check
-  if { [ "${ACTION}" == "init" ] || [ "${ACTION}" == "plan" ] || [ "${ACTION}" == "apply" ]; } && [ -z "${CONFIGURATION}" ]; then 
-    echo "Missing configuration option"
-    _tf_help; exit 1;
+  if { [ "${ACTION}" == "init" ] || [ "${ACTION}" == "plan" ] || [ "${ACTION}" == "apply" ]; }; then
+    if [ -z "${CONFIGURATION}" ]; then
+      echo "Missing configuration option"
+      _tf_help; exit 1;
+    fi
+    if [ -z "${ENVIRONMENT}" ]; then
+      echo "Missing environment option"
+      _tf_help; exit 1;
+    fi
   fi
   
   # let's display every parameter
