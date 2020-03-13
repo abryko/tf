@@ -9,11 +9,11 @@ NAME
       clone caascad terraform configuration and its modules and apply it
 
 SYNPOSIS
-      tf init [-c TERRAFORM_CONFIGURATION] [-r GIT_REVISION] [-l LIB_URL] [-e ENVIRONMENT]
-      tf plan [-c TERRAFORM_CONFIGURATION] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
-      tf apply [-c TERRAFORM_CONFIGURATION] [-a] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
-      tf show [-c TERRAFORM_CONFIGURATION] [-- TERRAFORM_OPTIONS ]
-      tf destroy [-c TERRAFORM_CONFIGURATION] [-- TERRAFORM_OPTIONS ]
+      tf init [-c CONFIGURATION] [-r GIT_REVISION] [-l LIB_URL] [-e ENVIRONMENT]
+      tf plan [-c CONFIGURATION] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
+      tf apply [-c CONFIGURATION] [-a] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
+      tf show [-c CONFIGURATION] [-- TERRAFORM_OPTIONS ]
+      tf destroy [-c CONFIGURATION] [-- TERRAFORM_OPTIONS ]
       tf clean
 
 DESCRIPTION
@@ -37,7 +37,7 @@ DESCRIPTION
       clean
            clean .terraform and .tmp folder
 
-      -c | --configuration TERRAFORM_CONFIGURATION
+      -c | --configuration CONFIGURATION
             The name of the configuration to apply. It must be within the configuration directory in modules.git.
             Mandatory
             Can be set with CONFIGURATION environment variable
@@ -60,7 +60,7 @@ EXAMPLE
       tf apply -c base -r ref/head/master -m git@git.corp.cloudwatt.com:pocwatt/terraform/mylib.git -e client1
       CONFIGURATION=base tf init
 "
-  }
+}
 
 function _tf_init () {
   if ! [[ -d "${TMP_DIR}/configurations/${CONFIGURATION}" ]]; then
