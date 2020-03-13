@@ -56,14 +56,6 @@ DESCRIPTION
             Defaults to the current git repo name
             Can be set with ENVIRONMENT environment variable
 
-      -t | --target RESOURCE
-            The target terraform resource to update
-            Can be set with TARGET environment variable
-
-      -a | --auto-approve
-            Skip interactive approval of plan before applying
-            Can be set with AUTO_APROVE environment variable
-
 EXAMPLE
       tf apply -c base -r ref/head/master -m git@git.corp.cloudwatt.com:pocwatt/terraform/mylib.git -e client1
       CONFIGURATION=base tf init
