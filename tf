@@ -4,71 +4,71 @@ set -o pipefail
 
 # help function
 function _tf_help () {
-echo "
+
+cat <<EOF
 NAME
-      clone caascad terraform configuration and its modules and apply it
+      Thin wrapper around terraform to work with Caascad configurations
 
 SYNPOSIS
-      tf init [-c TERRAFORM_CONFIGURATION] [-r GIT_REVISION] [-l LIB_URL] [-e ENVIRONMENT]
-      tf plan [-c TERRAFORM_CONFIGURATION] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
-      tf apply [-c TERRAFORM_CONFIGURATION] [-a] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
-      tf show [-c TERRAFORM_CONFIGURATION] [-- TERRAFORM_OPTIONS ]
-      tf destroy [-c TERRAFORM_CONFIGURATION] [-- TERRAFORM_OPTIONS ]
+      tf init [-c CONFIGURATION] [-r GIT_REVISION] [-l LIB_URL] [-e ENVIRONMENT]
+      tf plan [-c CONFIGURATION] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
+      tf apply [-c CONFIGURATION] [-a] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
+      tf show [-c CONFIGURATION] [-- TERRAFORM_OPTIONS ]
+      tf destroy [-c CONFIGURATION] [-- TERRAFORM_OPTIONS ]
       tf clean
 
 DESCRIPTION
-      get a specific revision of the lib git repository, change the backend to fit the environment parameter, and then plan or apply terraform
-
       init
-           check if a tmp folder exists, eventually download terraform scripts, and run terraform init
-      
+           init the specified configuration in .tmp and setup the backend
+           according to the current ENVIRONMENT
+
       plan
            generates a terraform plan for the specified configuration
 
       apply
-           creates resources planified with plan command         
+           creates resources planified with plan command
 
-      show 
+      show
            issue the terraform show command for the specified configuration
 
-      destroy 
+      destroy
            issue the terraform destroy command for the specified configuration
 
       clean
            clean .terraform and .tmp folder
 
-      -c | --configuration TERRAFORM_CONFIGURATION
-            The name of the configuration to apply. It must be within the configuration directory in modules.git.
-            Mandatory
+      -c | --configuration CONFIGURATION
+            The name of the configuration to apply. It must be within the
+            configuration directory in lib.git
             Can be set with CONFIGURATION environment variable
 
       -r | --revision GIT_REVISION
-            the git revision to extract from modules.git
+            The git revision to extract from lib.git
             Can be set with GIT_REVISION environment variable
 
-      -l | --lib_url LIB_URL
-            git modules repository url
-            Defaults to git@git.corp.cloudwatt.com:pocwatt/terraform/lib.git
+            default: refs/heads/master
+
+      -l | --lib-url LIB_URL
+            Git modules repository url
             Can be set with LIB_URL environment variable
+
+            default: git@git.corp.cloudwatt.com:pocwatt/terraform/lib.git
 
       -e | --environment ENVIRONMENT
             The environment (i.e DNS domain) we are targetting
-            Defaults to the current git repo name
             Can be set with ENVIRONMENT environment variable
-      
-      -t | --target RESOURCE
-            The target terraform resource to update
-            Can be set with TARGET environment variable
 
-      -a | --auto-approve
-            Skip interactive approval of plan before applying
-            Can be set with AUTO_APROVE environment variable
+            default: current git repo name
 
-EXAMPLE
-      tf apply -c base -r ref/head/master -m git@git.corp.cloudwatt.com:pocwatt/terraform/mylib.git -e client1
-      CONFIGURATION=base tf init
-"
-  }
+EXAMPLES
+
+      $ tf apply -c base -r refs/head/master \\
+          -m git@git.corp.cloudwatt.com:pocwatt/terraform/mylib.git -e client1
+
+      $ CONFIGURATION=base tf init
+EOF
+
+}
 
 function _tf_init () {
   if ! [[ -d "${TMP_DIR}/configurations/${CONFIGURATION}" ]]; then
@@ -84,19 +84,19 @@ function _tf_init () {
   )
   # add any tf and tfvars files present here to override the downloaded configuration
   cp ./*.tf ./*.tfvars "${TMP_DIR}/configurations/${CONFIGURATION}" &>/dev/null || true
-  
+
   # environment replacement in every *tf* files
-  sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "${TMP_DIR}"/configurations/"${CONFIGURATION}"/*.tf* 
+  sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "${TMP_DIR}"/configurations/"${CONFIGURATION}"/*.tf*
   # terraform init
   (
     cd "${TMP_DIR}/configurations/${CONFIGURATION}"
     terraform init -upgrade=true
   )
-  }
+}
 
 function _tf_clean () {
   rm -rf "${TMP_DIR}" &>/dev/null || true
-  }
+}
 
 function _tf_plan () {
   _tf_init
@@ -105,7 +105,7 @@ function _tf_plan () {
     # shellcheck disable=2086
     terraform plan ${TERRAFORM_OPTIONS} -out="../../tf.out"
   )
-  }
+}
 
 function _tf_apply () {
   if ! [[ -f "../tf.out" ]]; then _tf_plan; fi
@@ -114,7 +114,7 @@ function _tf_apply () {
     # shellcheck disable=2086
     terraform apply ${TERRAFORM_OPTIONS} "../../tf.out"
   )
-  }
+}
 
 function _tf_show () {
   (
@@ -122,14 +122,16 @@ function _tf_show () {
     # shellcheck disable=2086
     terraform show ${TERRAFORM_OPTIONS}
   )
-  }
+}
+
 function _tf_destroy () {
   (
     cd "${TMP_DIR}/configurations/${CONFIGURATION}"
     # shellcheck disable=2086
     terraform destroy ${TERRAFORM_OPTIONS}
   )
-  }
+}
+
 function _tf_parsing () {
   # trying to source our environments variables
   # shellcheck disable=1091
@@ -162,7 +164,7 @@ function _tf_parsing () {
         -r | --revision )
           shift;
           GIT_REVISION=$1;;
-        -l | --lib_url )
+        -l | --lib-url )
           shift;
           LIB_URL=$1;;
         -e | --environment )
@@ -191,7 +193,7 @@ function _tf_parsing () {
     fi
     ;;
   esac
-  
+
   # let's display every parameter
   echo "ACTION: ${ACTION}"
   echo "CONFIGURATION: ${CONFIGURATION}"
