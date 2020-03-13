@@ -4,9 +4,10 @@ set -o pipefail
 
 # help function
 function _tf_help () {
-echo "
+
+cat <<EOF
 NAME
-      clone caascad terraform configuration and its modules and apply it
+      Thin wrapper around terraform to work with Caascad configurations
 
 SYNPOSIS
       tf init [-c CONFIGURATION] [-r GIT_REVISION] [-l LIB_URL] [-e ENVIRONMENT]
@@ -17,10 +18,9 @@ SYNPOSIS
       tf clean
 
 DESCRIPTION
-      get a specific revision of the lib git repository, change the backend to fit the environment parameter, and then plan or apply terraform
-
       init
-           check if a tmp folder exists, eventually download terraform scripts, and run terraform init
+           init the specified configuration in .tmp and setup the backend
+           according to the current ENVIRONMENT
 
       plan
            generates a terraform plan for the specified configuration
@@ -38,28 +38,36 @@ DESCRIPTION
            clean .terraform and .tmp folder
 
       -c | --configuration CONFIGURATION
-            The name of the configuration to apply. It must be within the configuration directory in modules.git.
-            Mandatory
+            The name of the configuration to apply. It must be within the
+            configuration directory in lib.git
             Can be set with CONFIGURATION environment variable
 
       -r | --revision GIT_REVISION
-            the git revision to extract from modules.git
+            The git revision to extract from lib.git
             Can be set with GIT_REVISION environment variable
 
+            default: refs/heads/master
+
       -l | --lib-url LIB_URL
-            git modules repository url
-            Defaults to git@git.corp.cloudwatt.com:pocwatt/terraform/lib.git
+            Git modules repository url
             Can be set with LIB_URL environment variable
+
+            default: git@git.corp.cloudwatt.com:pocwatt/terraform/lib.git
 
       -e | --environment ENVIRONMENT
             The environment (i.e DNS domain) we are targetting
-            Defaults to the current git repo name
             Can be set with ENVIRONMENT environment variable
 
-EXAMPLE
-      tf apply -c base -r ref/head/master -m git@git.corp.cloudwatt.com:pocwatt/terraform/mylib.git -e client1
-      CONFIGURATION=base tf init
-"
+            default: current git repo name
+
+EXAMPLES
+
+      $ tf apply -c base -r refs/head/master \\
+          -m git@git.corp.cloudwatt.com:pocwatt/terraform/mylib.git -e client1
+
+      $ CONFIGURATION=base tf init
+EOF
+
 }
 
 function _tf_init () {
