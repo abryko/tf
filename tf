@@ -46,7 +46,7 @@ DESCRIPTION
             the git revision to extract from modules.git
             Can be set with GIT_REVISION environment variable
 
-      -l | --lib_url LIB_URL
+      -l | --lib-url LIB_URL
             git modules repository url
             Defaults to git@git.corp.cloudwatt.com:pocwatt/terraform/lib.git
             Can be set with LIB_URL environment variable
@@ -156,7 +156,7 @@ function _tf_parsing () {
         -r | --revision )
           shift;
           GIT_REVISION=$1;;
-        -l | --lib_url )
+        -l | --lib-url )
           shift;
           LIB_URL=$1;;
         -e | --environment )
