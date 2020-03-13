@@ -21,17 +21,17 @@ DESCRIPTION
 
       init
            check if a tmp folder exists, eventually download terraform scripts, and run terraform init
-      
+
       plan
            generates a terraform plan for the specified configuration
 
       apply
-           creates resources planified with plan command         
+           creates resources planified with plan command
 
-      show 
+      show
            issue the terraform show command for the specified configuration
 
-      destroy 
+      destroy
            issue the terraform destroy command for the specified configuration
 
       clean
@@ -55,7 +55,7 @@ DESCRIPTION
             The environment (i.e DNS domain) we are targetting
             Defaults to the current git repo name
             Can be set with ENVIRONMENT environment variable
-      
+
       -t | --target RESOURCE
             The target terraform resource to update
             Can be set with TARGET environment variable
@@ -84,19 +84,19 @@ function _tf_init () {
   )
   # add any tf and tfvars files present here to override the downloaded configuration
   cp ./*.tf ./*.tfvars "${TMP_DIR}/configurations/${CONFIGURATION}" &>/dev/null || true
-  
+
   # environment replacement in every *tf* files
-  sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "${TMP_DIR}"/configurations/"${CONFIGURATION}"/*.tf* 
+  sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "${TMP_DIR}"/configurations/"${CONFIGURATION}"/*.tf*
   # terraform init
   (
     cd "${TMP_DIR}/configurations/${CONFIGURATION}"
     terraform init -upgrade=true
   )
-  }
+}
 
 function _tf_clean () {
   rm -rf "${TMP_DIR}" &>/dev/null || true
-  }
+}
 
 function _tf_plan () {
   _tf_init
@@ -105,7 +105,7 @@ function _tf_plan () {
     # shellcheck disable=2086
     terraform plan ${TERRAFORM_OPTIONS} -out="../../tf.out"
   )
-  }
+}
 
 function _tf_apply () {
   if ! [[ -f "../tf.out" ]]; then _tf_plan; fi
@@ -114,7 +114,7 @@ function _tf_apply () {
     # shellcheck disable=2086
     terraform apply ${TERRAFORM_OPTIONS} "../../tf.out"
   )
-  }
+}
 
 function _tf_show () {
   (
@@ -122,14 +122,16 @@ function _tf_show () {
     # shellcheck disable=2086
     terraform show ${TERRAFORM_OPTIONS}
   )
-  }
+}
+
 function _tf_destroy () {
   (
     cd "${TMP_DIR}/configurations/${CONFIGURATION}"
     # shellcheck disable=2086
     terraform destroy ${TERRAFORM_OPTIONS}
   )
-  }
+}
+
 function _tf_parsing () {
   # trying to source our environments variables
   # shellcheck disable=1091
@@ -191,7 +193,7 @@ function _tf_parsing () {
     fi
     ;;
   esac
-  
+
   # let's display every parameter
   echo "ACTION: ${ACTION}"
   echo "CONFIGURATION: ${CONFIGURATION}"
