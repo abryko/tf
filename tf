@@ -11,8 +11,8 @@ NAME
 
 SYNPOSIS
       tf init [-c CONFIGURATION] [-r GIT_REVISION] [-l LIB_URL] [-e ENVIRONMENT]
-      tf plan [-c CONFIGURATION] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
-      tf apply [-c CONFIGURATION] [-a] [-t RESOURCE] [-- TERRAFORM_OPTIONS ]
+      tf plan [-c CONFIGURATION] [-r GIT_REVISION] [-- TERRAFORM_OPTIONS ]
+      tf apply [-c CONFIGURATION] [-r GIT_REVISION] [-- TERRAFORM_OPTIONS ]
       tf show [-c CONFIGURATION] [-- TERRAFORM_OPTIONS ]
       tf destroy [-c CONFIGURATION] [-- TERRAFORM_OPTIONS ]
       tf clean
@@ -70,6 +70,13 @@ EOF
 
 }
 
+function _tf_generic () {
+  (
+    cd "${TMP_DIR}/configurations/${CONFIGURATION}"
+    terraform "$@"
+  )
+}
+
 function _tf_init () {
   if ! [[ -d "${TMP_DIR}/configurations/${CONFIGURATION}" ]]; then
     _tf_clean
@@ -87,49 +94,25 @@ function _tf_init () {
 
   # environment replacement in every *tf* files
   sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "${TMP_DIR}"/configurations/"${CONFIGURATION}"/*.tf*
+
   # terraform init
-  (
-    cd "${TMP_DIR}/configurations/${CONFIGURATION}"
-    terraform init -upgrade=true
-  )
+  _tf_generic init -upgrade=true
 }
 
 function _tf_clean () {
   rm -rf "${TMP_DIR}" &>/dev/null || true
 }
 
-function _tf_plan () {
-  _tf_init
-  (
-    cd "${TMP_DIR}/configurations/${CONFIGURATION}"
-    # shellcheck disable=2086
-    terraform plan ${TERRAFORM_OPTIONS} -out="../../tf.out"
-  )
-}
-
-function _tf_apply () {
-  if ! [[ -f "../tf.out" ]]; then _tf_plan; fi
-  (
-    cd "${TMP_DIR}/configurations/${CONFIGURATION}"
-    # shellcheck disable=2086
-    terraform apply ${TERRAFORM_OPTIONS} "../../tf.out"
-  )
-}
-
-function _tf_show () {
-  (
-    cd "${TMP_DIR}/configurations/${CONFIGURATION}"
-    # shellcheck disable=2086
-    terraform show ${TERRAFORM_OPTIONS}
-  )
-}
-
-function _tf_destroy () {
-  (
-    cd "${TMP_DIR}/configurations/${CONFIGURATION}"
-    # shellcheck disable=2086
-    terraform destroy ${TERRAFORM_OPTIONS}
-  )
+function _tf_debug () {
+  # let's display every parameter
+  echo "ACTION: ${ACTION}" >&2
+  echo "CONFIGURATION: ${CONFIGURATION}" >&2
+  echo "GIT_REVISION: ${GIT_REVISION}" >&2
+  echo "LIB_URL: ${LIB_URL}" >&2
+  echo "ENVIRONMENT: ${ENVIRONMENT}" >&2
+  echo "TMP_DIR: ${TMP_DIR}" >&2
+  echo "TERRAFORM_OPTIONS: ${TERRAFORM_OPTIONS}" >&2
+  terraform -v >&2
 }
 
 function _tf_parsing () {
@@ -143,6 +126,7 @@ function _tf_parsing () {
   ENV=$(basename "$(git remote get-url origin 2>/dev/null)")
   ENVIRONMENT="${ENVIRONMENT:-${ENV%.*}}"
   TMP_DIR="./.tmp"
+  DEBUG="${DEBUG:-0}"
 
   case ${ACTION} in
     apply | plan | init | clean | show | destroy)
@@ -194,16 +178,26 @@ function _tf_parsing () {
     ;;
   esac
 
-  # let's display every parameter
-  echo "ACTION: ${ACTION}"
-  echo "CONFIGURATION: ${CONFIGURATION}"
-  echo "GIT_REVISION: ${GIT_REVISION}"
-  echo "LIB_URL: ${LIB_URL}"
-  echo "ENVIRONMENT: ${ENVIRONMENT}"
-  echo "TMP_DIR: ${TMP_DIR}"
-  echo "TERRAFORM_OPTIONS: ${TERRAFORM_OPTIONS}"
-  terraform -v
 }
 
+
 _tf_parsing "$@"
-"_tf_${ACTION}"
+
+if [[ ${DEBUG} -gt 0 ]]; then _tf_debug; fi
+
+case ${ACTION} in
+  clean | init)
+    "_tf_${ACTION}"
+  ;;
+  apply | plan)
+    _tf_init
+  ;& # bash 4 - the execution flow continue, the next pattern is not checked and the block is executed
+  show | destroy)
+    # shellcheck disable=2086
+    _tf_generic "${ACTION}" ${TERRAFORM_OPTIONS}
+  ;;
+  * )
+    _tf_help;
+    exit 1
+  ;;
+esac
