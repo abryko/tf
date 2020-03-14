@@ -115,7 +115,7 @@ function _tf_bootstrap () {
   fi
 
   # env directory
-  mkdir "${CONFIGURATION}" || true
+  mkdir "${CONFIGURATION}" &>/dev/null || true
   (
     cd "${CONFIGURATION}"
     if ! [[ -f "./shell.nix" ]]; then
@@ -129,16 +129,16 @@ function _tf_bootstrap () {
     _tf_clone
 
     # get envrc.EXAMPLE and tfvars file
-    for i in "./envrc.EXAMPLE" "/terraform.tfvars"; do
+    for i in "./envrc.EXAMPLE" "./terraform.tfvars"; do
       if ! [[ -f "${i}" ]]; then
-        cp "${TMP_DIR}/configurations/${CONFIGURATION}/${i}" . || true
+        cp "${TMP_DIR}/configurations/${CONFIGURATION}/${i}" . &>/dev/null || true
       else
         echo "./${CONFIGURATION}/${i} already present, skipping"
       fi
     done
 
     # substitute #ENVIRONMENT in terraform.tfvars and envrc.EXAMPLE
-    sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "./terraform.tfvars" "./envrc.EXAMPLE"
+    sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "./terraform.tfvars" "./envrc.EXAMPLE" &>/dev/null || true
 
     # generate tffile
     cat <<-EOF >"./tffile"
