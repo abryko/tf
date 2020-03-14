@@ -92,6 +92,12 @@ function _tf_bootstrap () {
 			# export AWS_SECRET_ACCESS_KEY=$(gopass keystore/caascad/aws/181151069204/AWS_SECRET_ACCESS_KEY)
 			export AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXXXXXXXXXX
 			export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXXXXX
+			
+			# creds for fe provider
+			# export TF_VAR_fe_access_key=$(gopass keystore/caascad/fe/OCB1111111/AWS_ACCESS_KEY_ID)
+			# export TF_VAR_fe_secret_key=$(gopass keystore/caascad/fe/OCB1111111/AWS_SECRET_ACCESS_KEY)
+			export TF_VAR_fe_access_key=XXXXXXXXXXXXXXXXXXXXXXXX
+			export TF_VAR_fe_secret_key=XXXXXXXXXXXXXXXXXXXXXXXX
 		EOF
   else
     echo "./envrc.EXAMPLE already present, skipping"
