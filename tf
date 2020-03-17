@@ -74,6 +74,11 @@ function _tf_help () {
 	EOF
 }
 
+function _is_git_url () {
+  git_url_regex='^(git|ssh|https?|git@[[:alnum:].-]+):(//)?(.*?)\.git/?$'
+  [[ "$1" =~ $git_url_regex ]]
+}
+
 function _tf_generic () {
   (
     cd "${TMP_DIR}/configurations/${CONFIGURATION}"
