@@ -109,13 +109,14 @@ function _tf_bootstrap () {
 			.terraform/
 			.envrc
 			.tmp/
+			.direnv.d/
 		EOF
   else
     echo "./.gitignore already present, skipping"
   fi
 
   # env directory
-  mkdir "${CONFIGURATION}" &>/dev/null || true
+  mkdir -p "${CONFIGURATION}" &>/dev/null || true
   (
     cd "${CONFIGURATION}"
     if ! [[ -f "./shell.nix" ]]; then
@@ -129,11 +130,10 @@ function _tf_bootstrap () {
     _tf_clone
 
     # get envrc.EXAMPLE and tfvars file
-    for i in "./envrc.EXAMPLE" "./terraform.tfvars"; do
-      if ! [[ -f "${i}" ]]; then
-        cp "${TMP_DIR}/configurations/${CONFIGURATION}/${i}" . &>/dev/null || true
-      else
-        echo "./${CONFIGURATION}/${i} already present, skipping"
+    CONFIG_DIR="${TMP_DIR}/configurations/${CONFIGURATION}"
+    for f in "envrc.EXAMPLE terraform.tfvars"; do
+      if [ -f "${CONFIG_DIR}/${f}" ] && [ ! -f "${f}" ]; then
+        cp "${CONFIG_DIR}/${f}" .
       fi
     done
 
