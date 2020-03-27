@@ -87,7 +87,7 @@ function _tf_init () {
     git reset --hard "${GIT_REVISION}"
   )
   # add any json, tf and tfvars files present here to override the downloaded configuration
-  cp ./*.tf ./*.tfvars ./*.json "${TMP_DIR}/configurations/${CONFIGURATION}" &>/dev/null || true
+  cp ./*.{tf,tfvars,json} "${TMP_DIR}/configurations/${CONFIGURATION}" &>/dev/null || true
 
   # environment replacement in every *tf* files
   sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "${TMP_DIR}"/configurations/"${CONFIGURATION}"/*.tf*
