@@ -84,7 +84,6 @@ function _tf_generic () {
 function _tf_bootstrap () {
   # global .envrc for s3 backend
   if ! [[ -f "./.envrc" ]]; then
-    echo 1
     cat <<-'EOF' >"./.envrc"
 			# creds for s3 backend
 			# you can use gopass to retrieve them. For example:
@@ -95,8 +94,6 @@ function _tf_bootstrap () {
 			# export TF_VAR_fe_access_key=$(gopass keystore/caascad/fe/OCB1111111/FE_ACCESS_KEY)
 			# export TF_VAR_fe_secret_key=$(gopass keystore/caascad/fe/OCB1111111/FE_SECRET_KEY)
 		EOF
-  else
-    echo "./envrc.EXAMPLE already present, skipping"
   fi
 
   # .gitignore
@@ -107,8 +104,6 @@ function _tf_bootstrap () {
 			.tmp/
 			.direnv.d/
 		EOF
-  else
-    echo "./.gitignore already present, skipping"
   fi
 
   # env directory
@@ -118,8 +113,6 @@ function _tf_bootstrap () {
     if ! [[ -f "./shell.nix" ]]; then
       # shell.nix
       toolbox make-shell terraform tf kswitch
-    else
-      echo "./${CONFIGURATION}/shell.nix already present, skipping"
     fi
 
     # get the git repository
@@ -127,21 +120,25 @@ function _tf_bootstrap () {
 
     # get envrc.EXAMPLE and tfvars file
     CONFIG_DIR="${TMP_DIR}/configurations/${CONFIGURATION}"
-    for f in "envrc.EXAMPLE terraform.tfvars"; do
-      if [ -f "${CONFIG_DIR}/${f}" ] && [ ! -f "${f}" ]; then
+    for f in envrc.EXAMPLE terraform.tfvars.json terraform.tfvars; do
+      if [[ -f "${CONFIG_DIR}/${f}" ]] && [[ ! -f "${f}" ]]; then
         cp "${CONFIG_DIR}/${f}" .
       fi
     done
 
+    if [[ -f "${CONFIG_DIR}/envrc.EXAMPLE" ]] && [[ ! -f ".envrc" ]]; then
+      cp "${CONFIG_DIR}/envrc.EXAMPLE" .envrc || true
+    fi
+
     # substitute #ENVIRONMENT in terraform.tfvars and envrc.EXAMPLE
-    sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" "./terraform.tfvars" "./envrc.EXAMPLE" &>/dev/null || true
+    sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" ./terraform.tfvars* "./.envrc" &>/dev/null || true
 
     # generate tffile
     cat <<-EOF >"./tffile"
 			CONFIGURATION=${CONFIGURATION}
 			GIT_REVISION=${GIT_REVISION}
-			DEBUG=${DEBUG}
-			LIB_URL=${LIB_URL}
+			# DEBUG=${DEBUG}
+			# LIB_URL=${LIB_URL}
 			ENVIRONMENT=${ENVIRONMENT}
 		EOF
   )
