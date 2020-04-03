@@ -93,8 +93,8 @@ function _tf_bootstrap () {
 			
 			# creds for FLEXIBLE ENGINE provider
 			# Those creds are often available in the caascad keystore
-			# export TF_VAR_fe_access_key=$(gopass keystore/caascad/fe/OCB1111111/FE_ACCESS_KEY)
-			# export TF_VAR_fe_secret_key=$(gopass keystore/caascad/fe/OCB1111111/FE_SECRET_KEY)
+			# export TF_VAR_fe_access_key=$(gopass caascad/fe/OCB1111111/FE_ACCESS_KEY)
+			# export TF_VAR_fe_secret_key=$(gopass caascad/fe/OCB1111111/FE_SECRET_KEY)
 		EOF
   fi
 
