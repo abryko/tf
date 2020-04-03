@@ -109,7 +109,7 @@ function _tf_bootstrap () {
   fi
 
   # env directory
-  mkdir -p "${CONFIGURATION}" &>/dev/null || true
+  mkdir -p "${CONFIGURATION}"
   (
     cd "${CONFIGURATION}"
     if ! [[ -f "./shell.nix" ]]; then
