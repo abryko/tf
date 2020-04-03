@@ -95,6 +95,10 @@ function _tf_bootstrap () {
 			# Those creds are often available in the caascad keystore
 			# export TF_VAR_fe_access_key=$(gopass caascad/fe/OCB1111111/FE_ACCESS_KEY)
 			# export TF_VAR_fe_secret_key=$(gopass caascad/fe/OCB1111111/FE_SECRET_KEY)
+			
+			# provide FLEXIBLE ENGINE project and domain
+			# export TF_VAR_fe_domain=XXXX
+			# export TF_VAR_fe_tenant=YYYY
 		EOF
   fi
 
@@ -129,7 +133,7 @@ function _tf_bootstrap () {
       cp "${CONFIG_DIR}/envrc.EXAMPLE" .envrc || true
     fi
 
-    # substitute #ENVIRONMENT in terraform.tfvars and envrc.EXAMPLE
+    # substitute #ENVIRONMENT in terraform.tfvars and .envrc
     sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" ./terraform.tfvars* "./.envrc" &>/dev/null || true
 
     # generate tffile
