@@ -118,9 +118,10 @@ function _tf_bootstrap () {
 
     # get envrc.EXAMPLE and tfvars file
     CONFIG_DIR="${TMP_DIR}/configurations/${CONFIGURATION}"
-    for f in envrc.EXAMPLE shell.nix toolbox.json *.tfvars*; do
-      if [[ -f "${CONFIG_DIR}/${f}" ]] && [[ ! -f "${f}" ]]; then
-        cp "${CONFIG_DIR}/${f}" .
+    LIST_FILE=$(echo "${CONFIG_DIR}"/{envrc.EXAMPLE,shell.nix,toolbox.json,*.tfvars*})
+    for f in ${LIST_FILE}; do
+      if [[ -f "${f}" ]] && [[ ! -f $(basename "${f}") ]]; then
+        cp "${f}" .
       fi
     done
 
@@ -250,14 +251,14 @@ function _tf_parsing () {
         _tf_help
         exit 1
       fi
-      ;;&
+      ;;& # execution flow continues, next pattern is checked
     init | plan | apply | bootstrap)
       if [[ -z "${ENVIRONMENT}" ]]; then
         echo "Missing environment option"
         _tf_help
         exit 1
       fi
-      ;;&
+      ;;& # execution flow continues, next pattern is checked
     bootstrap)
       if [[ -z "${GIT_REVISION}" ]]; then
         echo "Missing git revision option"
@@ -280,7 +281,7 @@ case "${ACTION}" in
     ;;
   apply | plan)
     _tf_init
-    ;& # bash 4 - the execution flow continue, the next pattern is not checked and the block is executed
+    ;& # bash 4 - the execution flow continues, the next pattern is not checked and the block is executed
   show | destroy)
     # shellcheck disable=2086
     _tf_generic "${ACTION}" ${TERRAFORM_OPTIONS}
