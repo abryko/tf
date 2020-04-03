@@ -118,7 +118,7 @@ function _tf_bootstrap () {
 
     # get envrc.EXAMPLE and tfvars file
     CONFIG_DIR="${TMP_DIR}/configurations/${CONFIGURATION}"
-    for f in envrc.EXAMPLE shell.nix *.tfvars*; do
+    for f in envrc.EXAMPLE shell.nix toolbox.json *.tfvars*; do
       if [[ -f "${CONFIG_DIR}/${f}" ]] && [[ ! -f "${f}" ]]; then
         cp "${CONFIG_DIR}/${f}" .
       fi
