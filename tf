@@ -9,6 +9,7 @@ function _tf_help () {
 		      Thin wrapper around terraform to work with Caascad configurations
 
 		SYNOPSIS
+		      tf bootstrap [ -c CONFIGURATION ] [ -r GIT_REVISION ] [ -e ENVIRONMENT ]
 		      tf init [-c CONFIGURATION] [-r GIT_REVISION] [-l LIB_URL] [-e ENVIRONMENT]
 		      tf plan [-c CONFIGURATION] [-r GIT_REVISION] [-- TERRAFORM_OPTIONS ]
 		      tf apply [-c CONFIGURATION] [-r GIT_REVISION] [-- TERRAFORM_OPTIONS ]
@@ -17,6 +18,11 @@ function _tf_help () {
 		      tf clean
 
 		DESCRIPTION
+		      bootstrap
+		           helper provided to create a configuration directory within an environment directory.
+		           It will create the directory with, tffile, terraform.tfvars, and .envrc in it.
+		           This helper should be executed in an empty directory.
+
 		      init
 		           init the specified configuration in .tmp and setup the backend
 		           according to the current ENVIRONMENT
@@ -75,7 +81,69 @@ function _tf_generic () {
   )
 }
 
-function _tf_init () {
+function _tf_bootstrap () {
+  # global .envrc for s3 backend
+  if ! [[ -f "./.envrc" ]]; then
+    cat <<-'EOF' >"./.envrc"
+			# creds for AMAZON S3 backend
+			# Those creds are individuals and should be stored in you personal keystore
+			# you can use gopass to retrieve them. For example:
+			export AWS_ACCESS_KEY_ID=$(gopass keystore/caascad/aws/181151069204/AWS_ACCESS_KEY_ID)
+			export AWS_SECRET_ACCESS_KEY=$(gopass keystore/caascad/aws/181151069204/AWS_SECRET_ACCESS_KEY)
+			
+			# creds for FLEXIBLE ENGINE provider
+			# Those creds are often available in the caascad keystore
+			# export TF_VAR_fe_access_key=$(gopass caascad/fe/OCB1111111/FE_ACCESS_KEY)
+			# export TF_VAR_fe_secret_key=$(gopass caascad/fe/OCB1111111/FE_SECRET_KEY)
+		EOF
+  fi
+
+  # .gitignore
+  if ! [[ -f "./.gitignore" ]]; then
+    cat <<-'EOF' >"./.gitignore"
+			.terraform/
+			.envrc
+			.tmp/
+			.direnv.d/
+		EOF
+  fi
+
+  # env directory
+  mkdir -p "${CONFIGURATION}"
+  (
+    cd "${CONFIGURATION}"
+
+    # get the git repository
+    _tf_clone
+
+    # get envrc.EXAMPLE and tfvars file
+    CONFIG_DIR="${TMP_DIR}/configurations/${CONFIGURATION}"
+    LIST_FILE="$(find "${CONFIG_DIR}" -name '*EXAMPLE' -o -name 'shell.nix' -o -name 'toolbox.json' -o -name '*.tfvars*')"
+    for f in "${LIST_FILE[@]}"; do
+      if [[ ! -f $(basename "${f}") ]]; then
+        cp "${f}" .
+      fi
+    done
+
+    if [[ -f "${CONFIG_DIR}/envrc.EXAMPLE" ]] && [[ ! -f ".envrc" ]]; then
+      cp "${CONFIG_DIR}/envrc.EXAMPLE" .envrc || true
+    fi
+
+    # substitute #ENVIRONMENT in terraform.tfvars and envrc.EXAMPLE
+    sed -i "s/#ENVIRONMENT#/${ENVIRONMENT}/g" ./terraform.tfvars* "./.envrc" &>/dev/null || true
+
+    # generate tffile
+    cat <<-EOF >"./tffile"
+			CONFIGURATION=${CONFIGURATION}
+			GIT_REVISION=${GIT_REVISION}
+			# DEBUG=${DEBUG}
+			# LIB_URL=${LIB_URL}
+			ENVIRONMENT=${ENVIRONMENT}
+		EOF
+  )
+}
+
+function _tf_clone () {
   if ! [[ -d "${TMP_DIR}/configurations/${CONFIGURATION}" ]]; then
     _tf_clean
     # clone lib.git repository
@@ -86,6 +154,12 @@ function _tf_init () {
     git fetch origin
     git reset --hard "${GIT_REVISION}"
   )
+}
+
+function _tf_init () {
+  # clone the lib repository
+  _tf_clone
+
   # add any json, tf and tfvars files present here to override the downloaded configuration
   cp ./*.{tf,tfvars,json} "${TMP_DIR}/configurations/${CONFIGURATION}" &>/dev/null || true
 
@@ -128,7 +202,7 @@ function _tf_parsing () {
   DEBUG="${DEBUG:-0}"
 
   case "${ACTION}" in
-    apply | plan | init | clean | show | destroy)
+    apply | plan | init | clean | show | destroy | bootstrap)
       ;;
     *)
       _tf_help
@@ -156,7 +230,7 @@ function _tf_parsing () {
         shift
         ENVIRONMENT=$1
         ;;
-      -- )
+      --)
         shift
         TERRAFORM_OPTIONS="$*"
         break
@@ -171,21 +245,29 @@ function _tf_parsing () {
 
   # mandatory parameters check
   case "${ACTION}" in
-    init | plan | apply | destroy)
+    init | plan | apply | destroy | bootstrap)
       if [[ -z "${CONFIGURATION}" ]]; then
         echo "Missing configuration option"
         _tf_help
         exit 1
       fi
+      ;;& # execution flow continues, next pattern is checked
+    init | plan | apply | bootstrap)
       if [[ -z "${ENVIRONMENT}" ]]; then
         echo "Missing environment option"
+        _tf_help
+        exit 1
+      fi
+      ;;& # execution flow continues, next pattern is checked
+    bootstrap)
+      if [[ -z "${GIT_REVISION}" ]]; then
+        echo "Missing git revision option"
         _tf_help
         exit 1
       fi
       ;;
   esac
 }
-
 
 _tf_parsing "$@"
 
@@ -194,12 +276,12 @@ if [[ ${DEBUG} -gt 0 ]]; then
 fi
 
 case "${ACTION}" in
-  clean | init)
+  clean | init | bootstrap)
     "_tf_${ACTION}"
     ;;
   apply | plan)
     _tf_init
-    ;& # bash 4 - the execution flow continue, the next pattern is not checked and the block is executed
+    ;& # bash 4 - the execution flow continues, the next pattern is not checked and the block is executed
   show | destroy)
     # shellcheck disable=2086
     _tf_generic "${ACTION}" ${TERRAFORM_OPTIONS}
