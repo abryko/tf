@@ -112,17 +112,13 @@ function _tf_bootstrap () {
   mkdir -p "${CONFIGURATION}"
   (
     cd "${CONFIGURATION}"
-    if ! [[ -f "./shell.nix" ]]; then
-      # shell.nix
-      toolbox make-shell terraform tf kswitch
-    fi
 
     # get the git repository
     _tf_clone
 
     # get envrc.EXAMPLE and tfvars file
     CONFIG_DIR="${TMP_DIR}/configurations/${CONFIGURATION}"
-    for f in envrc.EXAMPLE terraform.tfvars.json terraform.tfvars; do
+    for f in envrc.EXAMPLE shell.nix *.tfvars*; do
       if [[ -f "${CONFIG_DIR}/${f}" ]] && [[ ! -f "${f}" ]]; then
         cp "${CONFIG_DIR}/${f}" .
       fi
